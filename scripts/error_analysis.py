@@ -69,7 +69,25 @@ print("share of points under-forecast  model:", round(float((a > p_m).mean()), 3
 # --- capacity-rule trade-off on validation: cap = forecast + margin ---
 level = float(y.mean())
 print(f"\nlevel {level:.2f}%  | cap = forecast + margin (margin = pooled error quantile)")
-print("quantile  margin_pp  margin_%level  miss_rate  mean_shortfall_pp  mean_spare_pp")
+
+# --- one pre-specified variant: cap on the higher of model and persistence forecasts ---
+p_hi = np.maximum(p_m, p_b)
+e_hi = a - p_hi
+peak = a >= np.quantile(a, 0.9)
+rows2 = []
+for label, p, e in [("model+margin", p_m, e_m), ("max(model,persistence)+margin", p_hi, e_hi)]:
+    for q in (0.8, 0.9, 0.95):
+        m, _ = residual_band(e, lo=q, hi=q)
+        cap = p + m
+        rows2.append({"rule": label, "quantile": q, "margin_pp": float(m.mean()),
+                      "miss_rate": float((a > cap).mean()),
+                      "peak_miss_rate": float((a[peak] > cap[peak]).mean()),
+                      "mean_shortfall_pp": float(np.maximum(a - cap, 0).mean()),
+                      "mean_spare_pp": float(np.maximum(cap - a, 0).mean())})
+variant = pd.DataFrame(rows2)
+print("\n", variant.round(3).to_string(index=False))
+variant.to_csv("reports/policy_variants.csv", index=False)
+
 rows = []
 for q in (0.5, 0.8, 0.9, 0.95):
     m, _ = residual_band(e_m, lo=q, hi=q)
