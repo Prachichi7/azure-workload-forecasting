@@ -1,26 +1,21 @@
 import numpy as np
-from cwfc.targets import *
-#from cwfc.baselines import CANDIDATES
+
 from cwfc.candidates import CANDIDATES
-from cwfc.rolling import *
-#from cwfc.validation import *
+from cwfc.rolling import rolling_origin_eval, summarize
+from cwfc.targets import build_targets, load_readings, split
 
 series = build_targets(load_readings("challenge_data"))
-train, hold = split(series)          # don't touch `hold` again until the very end
+train, _ = split(series)                     # the holdout is never touched in this script
 y = train["aggregate_cpu_utilization"].values
-base = summarize(rolling_origin_eval(y, CANDIDATES["last_value"])[0])
-for name, f in CANDIDATES.items():
-    s = summarize(rolling_origin_eval(y, f)[0])
-    print(f"{name:15s} MAE={s['mae']:.4f} RMSE={s['rmse']:.4f} vs last_value MAE: {1 - s['mae']/base['mae']:+.1%}")
 
-# per-fold comparison and error by horizon step
-errs_em, _ = rolling_origin_eval(y, CANDIDATES["expanding_mean"])
-errs_lv, _ = rolling_origin_eval(y, CANDIDATES["last_value"])
-errs_ar, _ = rolling_origin_eval(y, CANDIDATES["ar1_meanrev"])
-
-print("per-fold MAE  expanding_mean:", np.abs(errs_em).mean(axis=1).round(3))
-print("per-fold MAE  last_value    :", np.abs(errs_lv).mean(axis=1).round(3))
-print("folds where expanding_mean wins:", (np.abs(errs_em).mean(1) < np.abs(errs_lv).mean(1)).sum(), "of", len(errs_em))
-
-for name, e in [("last_value", errs_lv), ("expanding_mean", errs_em), ("ar1_meanrev", errs_ar)]:
-    print(name, "MAE by horizon step (1,6,12,24):", np.abs(e).mean(axis=0)[[0, 5, 11, 23]].round(3))
+res = {n: rolling_origin_eval(y, f)[0] for n, f in CANDIDATES.items()}
+lv = np.abs(res["last_value"])
+print(f"{len(lv)} folds, horizon 24\n")
+for n, e in sorted(res.items(), key=lambda kv: summarize(kv[1])["rmse"]):
+    s = summarize(e)
+    fold = np.abs(e).mean(axis=1)
+    wins = int((fold < lv.mean(axis=1)).sum())
+    h = np.abs(e).mean(axis=0)[[0, 5, 11, 23]]
+    print(f"{n:15s} MAE={s['mae']:.4f} RMSE={s['rmse']:.4f} "
+          f"vs_last={1 - s['mae'] / lv.mean():+.1%} fold_wins={wins}/{len(fold)} "
+          f"MAE@h1,6,12,24={np.round(h, 3)}")

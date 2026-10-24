@@ -11,18 +11,17 @@ from .submission import validate_predictions
 from .targets import HOLDOUT, TARGETS, build_targets, load_readings, split
 
 
-def pick_model(y, horizon, min_train=48, step=6):
-    """Select by rolling-origin RMSE on the training window only.
-    Ties go to the first candidate (last_value). Too little history -> last_value."""
-    best, best_score = "last_value", np.inf
+def pick_model(y, horizon, min_train=48, step=6, tol=0.02):
+    """Lowest rolling-origin RMSE on the training window; among candidates within
+    `tol` of the best, the earliest (simplest) in CANDIDATES wins. Ties -> last_value."""
+    scores = {}
     for name, f in CANDIDATES.items():
         errs, _ = rolling_origin_eval(y, f, horizon, min_train, step)
         if errs.size == 0:
             return "last_value"
-        score = summarize(errs)["rmse"]
-        if score < best_score - 1e-12:
-            best, best_score = name, score
-    return best
+        scores[name] = summarize(errs)["rmse"]
+    best = min(scores.values())
+    return next(n for n, s in scores.items() if s <= best * (1 + tol))
 
 
 def main():
