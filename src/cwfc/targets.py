@@ -19,5 +19,6 @@ def build_targets(readings: pd.DataFrame) -> pd.DataFrame:
     return out.sort_index()
 
 def split(series, holdout=HOLDOUT):
-    """Chronological split. The tail `holdout` rows are never used for fitting or selection."""
+    if len(series) <= holdout + 2:
+        raise ValueError(f"need more than {holdout + 2} timestamps, got {len(series)}")
     return series.iloc[:-holdout], series.iloc[-holdout:]

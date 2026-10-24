@@ -42,8 +42,13 @@ def rolling_origin_splits(
 import numpy as np
 
 def rolling_origins(n, horizon, min_train, step):
-    """Origins anchored so the last fold ends exactly at n (end of the training window)."""
-    return sorted(range(n - horizon, min_train - 1, -step))
+    """History y[:o], test window y[o:o+horizon]. The last origin is n - horizon,
+    so the final window ends exactly at n (the end of the TRAINING window)."""
+    first = max(min_train, 2)
+    last = n - horizon
+    if last < first:
+        return []
+    return list(range(last, first - 1, -step))[::-1]
 
 def rolling_origin_eval(y, model_fn, horizon=24, min_train=48, step=6):
     """y = TRAINING window only. Returns (errors, actuals) arrays of shape (folds, horizon)."""
