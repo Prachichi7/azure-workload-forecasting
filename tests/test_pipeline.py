@@ -41,11 +41,25 @@ def test_rolling_origins_stay_inside_training_window():
     assert rolling_origins(20, 24, 48, 6) == []
 
 
-def test_candidates_use_only_the_history_they_are_given():
-    y = np.random.default_rng(1).normal(9, 0.2, 110)
-    y_future_changed = y.copy(); y_future_changed[80:] = 999
-    for name, f in CANDIDATES.items():
-        assert np.allclose(f(y[:80].copy(), 24), f(y_future_changed[:80].copy(), 24)), name
+def test_predictions_do_not_depend_on_holdout_values(tmp_path, monkeypatch):
+    def run(df, name):
+        data = tmp_path / name
+        data.mkdir()
+        df.to_csv(data / "vm_cpu_readings.csv.gz", index=False)
+        out = tmp_path / f"{name}.csv"
+        monkeypatch.setattr("sys.argv", ["predict", "--data", str(data), "--output", str(out)])
+        predict.main()
+        return pd.read_csv(out)
+
+    base = _readings()
+    changed = base.copy()
+    last24 = sorted(base["timestamp"].unique())[-HOLDOUT:]
+    mask = changed["timestamp"].isin(last24)
+    changed.loc[mask, ["min_cpu", "avg_cpu", "max_cpu"]] = 99.0   # wildly different holdout
+
+    a, b = run(base, "a"), run(changed, "b")
+    cols = ["active_vm_count", "aggregate_cpu_utilization"]
+    pd.testing.assert_frame_equal(a[cols], b[cols])
 
 
 def test_validator_accepts_good_and_rejects_bad():

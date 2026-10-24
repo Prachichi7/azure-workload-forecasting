@@ -1,0 +1,7 @@
+- rows=1340000  vms=10000  timestamps=134
+- gaps (seconds: count)={300: 133}
+- duplicates=0  missing avg_cpu=0
+- VMs per timestamp: min=10000
+- vm_category: mean CPU by segment = {'Delay-insensitive': 8.26, 'Interactive': 11.51, 'Unknown': 10.35}
+- virtual_core_bucket: mean CPU by segment = {'2': 9.76, '24': 11.43, '4': 7.92, '8': 9.66, '>24': 6.62}
+- created after window start: 0; deleted within window: 0
