@@ -1,0 +1,3 @@
+target,model,MAE,RMSE,mean_signed_error,sMAPE_%,MASE,baseline_MAE,baseline_RMSE,MAE_improvement_vs_last_value,peak_MAE_top10pct,band80_coverage,miss_rate_model_q90,miss_rate_max_rule_q90
+active_vm_count,last_value,0.0,0.0,0.0,,,,,,,,,
+aggregate_cpu_utilization,ar1_meanrev,0.15332118443371567,0.18323970047530191,-0.12377043315302871,1.650168524292457,1.2658923907198694,0.14678245915042454,0.18478539074333752,-0.04454704820410571,0.10816532179654577,0.8333333333333334,0.0,0.0
